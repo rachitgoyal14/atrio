@@ -30,7 +30,16 @@ def compute_stenosis(roi, mask, meta):
 
     D_min = diameters[inside].min()
     D_ref = np.sort(diameters[outside])[-10:].mean()
-    percent = (1 - D_min / D_ref) * 100
+    if not np.isfinite(D_ref) or D_ref <= 0:
+        return {
+            "percent": None,
+            "severity": "Unreliable",
+            "artery": "Unknown",
+            "visual": roi
+        }
+    percent = float((1 - D_min / D_ref) * 100)
+    # Clip measurement noise (D_min > D_ref can give small negatives)
+    percent = max(0.0, min(100.0, percent))
 
     if percent < 30:
         severity = "Normal"

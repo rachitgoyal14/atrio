@@ -1,4 +1,5 @@
 # app/db/session.py
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from core.config import settings
@@ -23,12 +24,19 @@ clean_query = urlencode(query, doseq=True)
 
 DATABASE_URL = urlunparse(parsed._replace(query=clean_query))
 
+# SSL only when explicitly requested (managed cloud DBs).
+# Local / docker-compose postgres has no SSL -> ssl=False (or unset).
+# Set DB_SSL=true (or sslmode=require in DATABASE_URL) to enable.
+_want_ssl = os.getenv("DB_SSL", "").lower() in ("1", "true", "yes", "require")
+if "sslmode=require" in settings.DATABASE_URL:
+    _want_ssl = True
+
+connect_args = {"ssl": True} if _want_ssl else {}
+
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
-    connect_args={
-        "ssl": True  # ✅ asyncpg-compatible SSL
-    },
+    echo=False,
+    connect_args=connect_args,
 )
 
 AsyncSessionLocal = sessionmaker(

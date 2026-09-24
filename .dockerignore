@@ -1,0 +1,19 @@
+# Root .dockerignore (build context is repo root)
+.git/
+.gitignore
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+node_modules/
+frontend/node_modules/
+frontend/dist/
+# Don't bake sample uploads/inference outputs into images (mounted as volumes at runtime)
+backend/app/storage/dicom/
+backend/app/storage/results/
+backend/app/storage/roi/
+backend/app/storage/masks/
+backend/storage/
+images/
+Stenosis-detection/

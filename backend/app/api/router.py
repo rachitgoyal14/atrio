@@ -1,6 +1,6 @@
 # app/api/router.py
 from fastapi import APIRouter
-from api import dashboard, upload, inference, findings, decision, report, patient
+from api import dashboard, upload, inference, findings, decision, report, patient, listen, viewer_3d
 
 router = APIRouter()
 router.include_router(patient.router)
@@ -10,3 +10,5 @@ router.include_router(inference.router)
 router.include_router(findings.router)
 router.include_router(decision.router)
 router.include_router(report.router)
+router.include_router(listen.router)
+router.include_router(viewer_3d.router)

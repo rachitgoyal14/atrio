@@ -14,8 +14,11 @@ async def run_inference_for_study(db, study_id):
     ).scalars().all()
 
     for img in images:
-        with open(img.file_path, "rb") as f:
-            image_bytes = f.read()
+        try:
+            with open(img.file_path, "rb") as f:
+                image_bytes = f.read()
+        except FileNotFoundError:
+            continue
 
         result = run_stenosis_pipeline(
             image_bytes=image_bytes,

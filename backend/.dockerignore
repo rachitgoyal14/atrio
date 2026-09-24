@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+storage/dicom/*
+storage/results/*
+storage/roi/*
+storage/masks/*
+!storage/**/.gitkeep
+.env

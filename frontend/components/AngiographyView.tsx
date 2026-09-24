@@ -7,6 +7,8 @@ import {
 import { Patient, Finding } from '../types';
 import { analyzeMedicalCorrection, refineMedicalTranscript } from '../services/geminiService';
 import { getFindingsView } from '../services/findingsService';
+import { acceptStudy } from '../services/decisionService';
+import { generateReport } from '../services/reportService';
 import { jsPDF } from "jspdf";
 
 interface AngiographyViewProps {
@@ -393,6 +395,21 @@ useEffect(() => {
 
   const handleFinalizeStudy = async () => {
      if (window.confirm("Confirm validation of all findings? This will generate the final report.")) {
+        // Persist doctor decision + generate backend report when linked to a backend study.
+        // Falls back to local-only mode for mock patients without a studyId.
+        if (patient.studyId) {
+          try {
+            await acceptStudy(patient.studyId);
+            try {
+              const rep = await generateReport(patient.studyId);
+              console.log('Backend report:', rep.summary);
+            } catch (repErr) {
+              console.warn('Backend report generation skipped:', repErr);
+            }
+          } catch (err) {
+            console.warn('Backend accept skipped (local-only mode):', err);
+          }
+        }
         const updatedPatient = {
             ...patient, 
             reportGenerated: true, 

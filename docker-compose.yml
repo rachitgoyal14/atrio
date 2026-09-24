@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: atrio
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/atrio
+      HF_MODEL_REPO: ${HF_MODEL_REPO:-rachitgoyell/stenosis-detection}
+      HF_MODEL_FILE: ${HF_MODEL_FILE:-best.pt}
+      YOLO_CONF: ${YOLO_CONF:-0.25}
+      YOLO_IOU: ${YOLO_IOU:-0.45}
+      YOLO_IMGSZ: ${YOLO_IMGSZ:-640}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-${AZURE_API_KEY:-}}
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist uploads + inference visuals outside the container
+      - ./backend/app/storage:/app/backend/app/storage
+      # Persist model weights: entrypoint reuses best.pt if present,
+      # downloads from Hugging Face only when missing
+      - ./backend/ai_models:/app/backend/ai_models
+      # Cache HF weights so rebuilds don't re-download
+      - hf-cache:/root/.cache/huggingface
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  hf-cache:
